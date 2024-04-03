@@ -6,7 +6,6 @@
 	import { Window, windowSize, URLList } from './store.js';
 	let formHeight: number;
 	let window: Window;
-	let main: Element;
 	$: rotate = 0;
 	$: topOffset = 0;
 	$: leftOffset = 0;
@@ -47,7 +46,7 @@
 	}
 
 	onMount(() => {
-		new ResizeObserver(windowSpy).observe(main);
+		new ResizeObserver(windowSpy).observe(globalThis.document.body);
 	});
 
 	import * as _ from 'remeda';
@@ -72,30 +71,44 @@
 			event.target.url.value = '';
 		}
 	}
+	function copy() {
+		URLList.add($URLList[currentFrameIndex]);
+	}
 	function remove() {
 		URLList.remove(currentFrameIndex);
 		currentFrameIndex = currentFrameIndex - 1;
 	}
+	$: load = 0;
+	URLList.subscribe((i) => (load = i.length));
+	function calculateLoad(load: number): number {
+		if (Math.log(load + 1) * 50 < 255) {
+			return Math.log(load + 1) * 50;
+		} else return 255;
+	}
 </script>
 
 <div
-	bind:this={main}
 	class="main"
-	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$windowSize.height}px; width: ${$windowSize.width}px`}
+	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$windowSize.height + formHeight}px; width: ${$windowSize.width}px`}
 >
 	<form bind:clientHeight={formHeight} on:submit={add} class="header">
 		<button
 			on:click={() => {
 				rotate = rotate - 90;
-			}}>Rotate!</button
+			}}>R</button
 		>
-		<select bind:value={currentFrameIndex} disabled={$URLList.length === 0}>
+		<select
+			bind:value={currentFrameIndex}
+			disabled={$URLList.length === 0}
+			style={`background-color:rgb(${calculateLoad(load)},0,0)`}
+		>
 			{#each $URLList as url, index}
 				<option value={index}>{index}:{new URL(url).hostname.toUpperCase()}({url})</option>
 			{/each}
 		</select>
 		<input name="url" type="url" />
 		<button type="submit">Add</button>
+		<button on:click={copy}>Copy</button>
 		<button on:dblclick={remove} disabled={$URLList.length === 0}>Remove</button>
 	</form>
 	<div class="window">
@@ -103,10 +116,13 @@
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
 				src={url}
-				style={`height: ${$windowSize.height}px;left: ${index === currentFrameIndex ? '0' : '-100%'}`}
+				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${index === currentFrameIndex ? '0' : '-100%'}; z-index: 99`}
 			></iframe>
 		{/each}
 	</div>
+</div>
+<div class="info">
+	{navigator.userAgent}
 </div>
 
 <style lang="postcss">
@@ -117,7 +133,10 @@
 		height: 100vh; /* For browsers that don't support CSS variables */
 		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
 		height: 100dvh; /* This is for future browsers that support svh, dvh and lvh viewport units */
-		@apply m-0  p-0;
+		background-image: url('Iflytek_Suzhou_Branch_and_Institute.jpg');
+		background-position: center;
+		background-size: cover;
+		@apply m-0 overflow-hidden p-0;
 	}
 	.main {
 		@apply absolute flex h-full w-full flex-col;
@@ -144,5 +163,8 @@
 	}
 	.window iframe {
 		@apply absolute h-full w-full;
+	}
+	.info {
+		@apply absolute bottom-4 left-4 -z-10 font-mono text-xs text-white;
 	}
 </style>
