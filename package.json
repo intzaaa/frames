@@ -1,6 +1,6 @@
 {
 	"name": "frames",
-	"version": "1.0.0",
+	"version": "1.2.0",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
@@ -41,5 +41,6 @@
 		"vite": "^5.0.3",
 		"vite-plugin-pwa": "^0.19.7"
 	},
+	"prepack": "svelte-kit sync",
 	"type": "module"
 }

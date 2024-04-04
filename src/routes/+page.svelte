@@ -48,9 +48,7 @@
 				window = new Window(width - formHeight, height);
 				break;
 		}
-		console.log(rotate);
 		windowSize.set(window);
-		console.log(window);
 	}
 
 	onMount(() => {
@@ -74,9 +72,9 @@
 		localStorage.setItem('currentFrameIndex', currentFrameIndex.toString());
 	}
 	$: {
-		if (currentFrameIndex > $URLList.length - 1) {
+		if (Number(currentFrameIndex) > $URLList.length - 1) {
 			currentFrameIndex = $URLList.length - 1;
-		} else if (currentFrameIndex < -1) {
+		} else if (Number(currentFrameIndex) < -1) {
 			currentFrameIndex = -1;
 		}
 	}
@@ -141,7 +139,7 @@
 			disabled={$URLList.length === 0}
 			style={`background-color:rgb(${calculateLoad(load)},0,0)`}
 		>
-			<option value="-1">HOME</option>
+			<option value={-1}>HOME</option>
 			{#each $URLList as url, index}
 				<option value={index}>{index}: {new URL(url).hostname.toUpperCase()}</option>
 			{/each}
@@ -201,10 +199,6 @@
 		@apply box-border origin-top-left transition-all duration-300;
 	}
 	:global(body) {
-		width: 100vw; /* For browsers that don't support CSS variables */
-		width: calc(var(--1dvw, 1vw) * 100); /* This is the "polyfill" */
-		width: 100dvw; /* This is for future browsers that support svh, dvh and lvh viewport units */
-
 		height: 100vh; /* For browsers that don't support CSS variables */
 		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
 		height: 100dvh; /* This is for future browsers that support svh, dvh and lvh viewport units */
@@ -213,19 +207,19 @@
 		background-position: center;
 		background-size: cover;
 
-		@apply m-0 overflow-hidden p-0 transition-none;
+		@apply m-0 w-full overflow-hidden p-0 transition-none;
 	}
 	.main {
 		@apply absolute flex h-full w-full flex-col;
 	}
 	.header {
-		@apply left-0 top-0 z-10 flex h-fit w-full flex-row bg-black font-mono text-white;
+		@apply left-0 top-0 z-10 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white;
 	}
 	.header select {
 		@apply w-fit min-w-12 max-w-48 bg-blue-800 outline-none disabled:hidden;
 	}
 	.header input {
-		@apply w-auto grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
+		@apply w-auto min-w-4 grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
 	}
 	.header button {
 		@apply w-fit pl-2 pr-2 active:font-bold disabled:opacity-50;
