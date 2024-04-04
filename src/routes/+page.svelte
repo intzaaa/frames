@@ -55,6 +55,12 @@
 
 	onMount(() => {
 		new ResizeObserver(windowSpy).observe(globalThis.document.body);
+		const url = new URL(globalThis.window.location.href);
+		if (url.searchParams.has('restore')) {
+			localStorage.clear();
+			url.searchParams.delete('restore');
+			globalThis.window.location.replace(url);
+		}
 	});
 
 	import * as _ from 'remeda';
