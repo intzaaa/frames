@@ -2,6 +2,7 @@
 	import 'large-small-dynamic-viewport-units-polyfill';
 	import '../app.pcss';
 
+	import { version } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { Window, windowSize, URLList } from './store.js';
 	let formHeight: number;
@@ -154,22 +155,26 @@
 		{/each}
 	</div>
 	<div class="info">
+		<div><b>Beyond the frames, naturally.</b></div>
+		<div>Version: {version}</div>
 		<div>{navigator.userAgent}</div>
-		{#await (async () => {
-			const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-			const text = await res.text();
-			if (text.includes('loc=CN')) {
-				throw new Error('YOU ARE USING CHINA INTERNET!');
-			} else {
-				return text;
-			}
-		})()}
-			<span>...Checking Github Connection Availability</span>
-		{:then _}
-			<a href="https://github.com/intzaaa/frames/">Source Code</a>
-		{:catch _}
-			<span>Source Code: https://github.com/intzaaa/frames/</span>
-		{/await}
+		<div class="source">
+			{#await (async () => {
+				const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+				const text = await res.text();
+				if (text.includes('loc=CN')) {
+					throw new Error('YOU ARE USING CHINA INTERNET!');
+				} else {
+					return text;
+				}
+			})()}
+				<span>...Checking Github Connection Availability</span>
+			{:then _}
+				<a href="https://github.com/intzaaa/frames/">Source Code</a>
+			{:catch _}
+				<span>Source Code: https://github.com/intzaaa/frames/</span>
+			{/await}
+		</div>
 	</div>
 </div>
 
@@ -210,9 +215,12 @@
 		@apply h-full w-full grow;
 	}
 	.window iframe {
-		@apply absolute h-full w-full duration-700;
+		@apply absolute h-full w-full bg-gray-50 duration-700;
 	}
 	.info {
 		@apply absolute bottom-0 z-0 p-8 font-mono text-xs text-white opacity-75;
+	}
+	.source {
+		@apply underline;
 	}
 </style>
