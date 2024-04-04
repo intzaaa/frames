@@ -98,7 +98,7 @@
 			event.target.url.value = '';
 		}
 	}
-	function copy(event: Event) {
+	function clone(event: Event) {
 		if (isKeyClick(event)) return;
 		URLList.add($URLList[currentFrameIndex]);
 	}
@@ -140,10 +140,16 @@
 				<option value={index}>{index}:{new URL(url).hostname.toUpperCase()}({url})</option>
 			{/each}
 		</select>
-		<input name="url" type="url" />
+		<input name="url" type="url" placeholder="Start your surfing journey here..." />
 		<button type="submit">New</button>
-		<button on:click={copy}>Clone</button>
-		<button on:click={remove} disabled={$URLList.length === 0}>RM</button>
+		<button on:click={clone} disabled={$URLList.length === 0 || Number(currentFrameIndex) === -1}
+			>Clone</button
+		>
+		<button
+			on:click={remove}
+			disabled={$URLList.length === 0 || Number(currentFrameIndex) === -1}
+			style="color: red">X</button
+		>
 	</form>
 	<div class="window">
 		{#each $URLList as url, index}
@@ -201,10 +207,10 @@
 		@apply w-36 bg-blue-800 outline-none;
 	}
 	.header input {
-		@apply grow border-0 bg-blue-950 outline-none;
+		@apply grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
 	}
 	.header button {
-		@apply w-fit pl-2 pr-2;
+		@apply w-fit pl-2 pr-2 active:font-bold disabled:opacity-50;
 	}
 	.header > * {
 		border-left-width: 1.125px !important;
