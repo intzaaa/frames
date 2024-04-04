@@ -184,7 +184,7 @@
 		background-image: url('/Iflytek_Suzhou_Branch_and_Institute.jpg');
 		background-position: center;
 		background-size: cover;
-		@apply m-0 overflow-hidden p-0;
+		@apply m-0 overflow-hidden p-0 transition-none;
 	}
 	.main {
 		@apply absolute flex h-full w-full flex-col;
