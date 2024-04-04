@@ -137,10 +137,16 @@
 		>
 			<option value="-1">HOME</option>
 			{#each $URLList as url, index}
-				<option value={index}>{index}:{new URL(url).hostname.toUpperCase()}({url})</option>
+				<option value={index}>{index}: {new URL(url).hostname.toUpperCase()}</option>
 			{/each}
 		</select>
-		<input name="url" type="url" placeholder="Start your surfing journey here..." />
+		<input
+			name="url"
+			type="url"
+			placeholder={Number(currentFrameIndex) === -1
+				? 'Start your surfing journey here...'
+				: new URL($URLList[currentFrameIndex]).pathname}
+		/>
 		<button type="submit">New</button>
 		<button on:click={clone} disabled={$URLList.length === 0 || Number(currentFrameIndex) === -1}
 			>Clone</button
@@ -204,7 +210,7 @@
 		@apply left-0 top-0 z-10 flex h-fit w-full flex-row bg-black font-mono text-white;
 	}
 	.header select {
-		@apply w-36 bg-blue-800 outline-none;
+		@apply w-fit min-w-12 max-w-48 bg-blue-800 outline-none disabled:hidden;
 	}
 	.header input {
 		@apply grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
