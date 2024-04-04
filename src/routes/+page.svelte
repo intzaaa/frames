@@ -10,7 +10,7 @@
 	$: rotate = 0;
 	$: {
 		if (localStorage.getItem('rotate')) {
-			rotate = parseInt(localStorage.getItem('rotate') || '0');
+			rotate = parseInt(localStorage.getItem('rotate') || '0') % 360;
 		}
 	}
 	$: topOffset = 0;

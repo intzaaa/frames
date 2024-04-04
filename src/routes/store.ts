@@ -31,7 +31,7 @@ function createURLList() {
     subscribe,
     add: (url: string) => update((n) => {
       let newList: Array<string> = Array.from(n);
-      newList.push(url);
+      newList.push(new URL(url).href);
       return newList;
     }),
     remove: (index: number) => update((n) => {
