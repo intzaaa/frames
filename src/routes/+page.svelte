@@ -201,12 +201,18 @@
 		@apply box-border origin-top-left transition-all duration-300;
 	}
 	:global(body) {
+		width: 100vw; /* For browsers that don't support CSS variables */
+		width: calc(var(--1dvw, 1vw) * 100); /* This is the "polyfill" */
+		width: 100dvw; /* This is for future browsers that support svh, dvh and lvh viewport units */
+
 		height: 100vh; /* For browsers that don't support CSS variables */
 		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
 		height: 100dvh; /* This is for future browsers that support svh, dvh and lvh viewport units */
+
 		background-image: url('/Iflytek_Suzhou_Branch_and_Institute.jpg');
 		background-position: center;
 		background-size: cover;
+
 		@apply m-0 overflow-hidden p-0 transition-none;
 	}
 	.main {
@@ -219,7 +225,7 @@
 		@apply w-fit min-w-12 max-w-48 bg-blue-800 outline-none disabled:hidden;
 	}
 	.header input {
-		@apply grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
+		@apply w-auto grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
 	}
 	.header button {
 		@apply w-fit pl-2 pr-2 active:font-bold disabled:opacity-50;
