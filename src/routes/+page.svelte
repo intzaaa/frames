@@ -1,10 +1,19 @@
 <script lang="ts">
 	import 'large-small-dynamic-viewport-units-polyfill';
+	import logo from '$lib/logo.png';
 	import '../app.pcss';
+
+	let id: string;
+	if (localStorage.getItem('id')) {
+		id = localStorage.getItem('id')!;
+	} else {
+		id = sha1(Date.now().toString()).substr(0, 5).toUpperCase();
+		localStorage.setItem('id', id);
+	}
 
 	import { version } from '$app/environment';
 	import { onMount } from 'svelte';
-	import { Window, windowSize, URLList } from './store.js';
+	import { Window, windowSize, UniqueURL, URLList } from './store.js';
 	let formHeight: number;
 	let window: Window;
 	$: rotate = 0;
@@ -62,6 +71,7 @@
 	});
 
 	import * as _ from 'remeda';
+	import { sha1 } from 'js-sha1';
 	$: currentFrameIndex = -1;
 	$: {
 		if (localStorage.getItem('currentFrameIndex')) {
@@ -96,7 +106,7 @@
 			let formData = new FormData(formElement);
 			let url = formData.get('url')?.toString();
 			if (url) {
-				URLList.add(url);
+				URLList.add(new URL(url));
 				currentFrameIndex = $URLList.length - 1;
 			}
 			event.target.url.value = '';
@@ -104,7 +114,7 @@
 	}
 	function clone(event: Event) {
 		if (isKeyClick(event)) return;
-		URLList.add($URLList[currentFrameIndex]);
+		URLList.add($URLList[currentFrameIndex].url);
 	}
 	function remove(event: Event) {
 		if (isKeyClick(event)) return;
@@ -137,11 +147,13 @@
 		<select
 			bind:value={currentFrameIndex}
 			disabled={$URLList.length === 0}
-			style={`background-color:rgb(${calculateLoad(load)},0,0)`}
+			style={`background-color:rgb(${calculateLoad(load)},0,0); appearance: none`}
 		>
-			<option value={-1}>HOME</option>
-			{#each $URLList as url, index}
-				<option value={index}>{index}: {new URL(url).hostname.toUpperCase()}</option>
+			<option value={-1}>{id} HOME</option>
+			{#each $URLList as uniqueURL, index}
+				<option value={index}
+					>{uniqueURL.id.toUpperCase()} {uniqueURL.url.hostname.toUpperCase()}</option
+				>
 			{/each}
 		</select>
 		<input
@@ -149,7 +161,7 @@
 			type="url"
 			placeholder={Number(currentFrameIndex) === -1
 				? 'Start your surfing journey here...'
-				: new URL($URLList[currentFrameIndex]).pathname}
+				: $URLList[currentFrameIndex].url.pathname}
 		/>
 		<button type="submit">New</button>
 		<button on:click={clone} disabled={$URLList.length === 0 || Number(currentFrameIndex) === -1}
@@ -162,35 +174,39 @@
 		>
 	</form>
 	<div class="window">
-		{#each $URLList as url, index}
+		{#each $URLList as uniqueURL, index}
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
-				src={url}
+				src={uniqueURL.url.href}
 				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${index === currentFrameIndex ? '0' : '-100%'}; opacity: ${index === currentFrameIndex ? 1 : 0}; z-index: 99`}
 			></iframe>
 		{/each}
 	</div>
 	<div class="info">
+		<img src={logo} alt="logo" style="filter: invert(100%);" />
 		<div><b>Beyond the frames, naturally.</b></div>
-		<div>Version: {version}</div>
-		<div>{navigator.userAgent}</div>
-		<div class="source">
-			{#await (async () => {
-				const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-				const text = await res.text();
-				if (text.includes('loc=CN')) {
-					throw new Error('YOU ARE USING CHINA INTERNET!');
-				} else {
-					return text;
-				}
-			})()}
-				<span>...Checking Github Connection Availability</span>
-			{:then _}
-				<a href="https://github.com/intzaaa/frames/">Source Code</a>
-			{:catch _}
-				<span>Source Code: https://github.com/intzaaa/frames/</span>
-			{/await}
-		</div>
+		<details class="info-verbose">
+			<summary>Verbose</summary>
+			<div>Version: {version}</div>
+			<div>User-Agent: {navigator.userAgent}</div>
+			<div class="source">
+				{#await (async () => {
+					const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+					const text = await res.text();
+					if (text.includes('loc=CN')) {
+						throw new Error('YOU ARE USING CHINA INTERNET!');
+					} else {
+						return text;
+					}
+				})()}
+					<span>...Checking Github Connection Availability</span>
+				{:then _}
+					<u><a href="https://github.com/intzaaa/frames/">Source Code</a></u>
+				{:catch _}
+					<span>Source Code: <u>https://github.com/intzaaa/frames</u></span>
+				{/await}
+			</div>
+		</details>
 	</div>
 </div>
 
@@ -219,15 +235,15 @@
 		@apply w-fit min-w-12 max-w-48 bg-blue-800 outline-none disabled:hidden;
 	}
 	.header input {
-		@apply w-auto min-w-4 grow border-0 bg-blue-950 pl-1 pr-1 outline-none;
+		@apply w-auto min-w-4 grow border-0 bg-blue-950 outline-none;
 	}
 	.header button {
-		@apply w-fit pl-2 pr-2 active:font-bold disabled:opacity-50;
+		@apply w-fit active:font-bold disabled:opacity-50;
 	}
 	.header > * {
 		border-left-width: 1.125px !important;
 		border-right-width: 1.125px !important;
-		@apply border-solid border-blue-600;
+		@apply border-solid border-blue-600 pl-2 pr-2;
 	}
 	.window {
 		@apply h-full w-full grow;
@@ -236,9 +252,12 @@
 		@apply absolute h-full w-full bg-gray-50 duration-700;
 	}
 	.info {
-		@apply absolute bottom-0 z-0 p-8 font-mono text-xs text-white opacity-75;
+		@apply absolute bottom-0 z-0 p-8 font-mono  text-white opacity-75 hover:opacity-100;
 	}
-	.source {
-		@apply underline;
+	.info * {
+		@apply text-xs;
+	}
+	.info:hover * {
+		@apply text-sm;
 	}
 </style>
