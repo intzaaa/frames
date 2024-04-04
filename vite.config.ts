@@ -1,6 +1,13 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 
+
 export default defineConfig({
-	plugins: [sveltekit()]
+	plugins: [
+		sveltekit()
+	],
+	build: {
+		target: ["es2015", "chrome77"],
+		cssTarget: ["chrome77"]
+	},
 });

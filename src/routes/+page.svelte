@@ -7,18 +7,25 @@
 	let formHeight: number;
 	let window: Window;
 	$: rotate = 0;
+	$: {
+		if (localStorage.getItem('rotate')) {
+			rotate = parseInt(localStorage.getItem('rotate') || '0');
+		}
+	}
 	$: topOffset = 0;
 	$: leftOffset = 0;
 	$: {
-		if (rotate < -270) rotate = 0;
-		windowSpy();
+		windowSpy(rotate);
+	}
+	$: {
+		localStorage.setItem('rotate', rotate.toString());
 	}
 
-	function windowSpy() {
+	function windowSpy(..._: any) {
 		let height = globalThis.document.body.clientHeight;
 		let width = globalThis.document.body.clientWidth;
 		console.log(new Window(height, width));
-		switch (rotate) {
+		switch (rotate % 360) {
 			case 0:
 				topOffset = 0;
 				leftOffset = 0;
@@ -50,12 +57,31 @@
 	});
 
 	import * as _ from 'remeda';
-	$: currentFrameIndex = 0;
+	$: currentFrameIndex = -1;
+	$: {
+		if (localStorage.getItem('currentFrameIndex')) {
+			currentFrameIndex = parseInt(localStorage.getItem('currentFrameIndex') || '0');
+		}
+	}
+	$: {
+		localStorage.setItem('currentFrameIndex', currentFrameIndex.toString());
+	}
 	$: {
 		if (currentFrameIndex > $URLList.length - 1) {
 			currentFrameIndex = $URLList.length - 1;
-		} else if (currentFrameIndex < 0) {
-			currentFrameIndex = 0;
+		} else if (currentFrameIndex < -1) {
+			currentFrameIndex = -1;
+		}
+	}
+	function isKeyClick(event: Event): boolean {
+		if (event instanceof PointerEvent) {
+			if (event.pointerId === -1) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			return false;
 		}
 	}
 	function add(event: Event) {
@@ -71,10 +97,12 @@
 			event.target.url.value = '';
 		}
 	}
-	function copy() {
+	function copy(event: Event) {
+		if (isKeyClick(event)) return;
 		URLList.add($URLList[currentFrameIndex]);
 	}
-	function remove() {
+	function remove(event: Event) {
+		if (isKeyClick(event)) return;
 		URLList.remove(currentFrameIndex);
 		currentFrameIndex = currentFrameIndex - 1;
 	}
@@ -93,47 +121,67 @@
 >
 	<form bind:clientHeight={formHeight} on:submit={add} class="header">
 		<button
-			on:click={() => {
+			on:click={(event) => {
+				if (isKeyClick(event)) return;
 				rotate = rotate - 90;
-			}}>R</button
+			}}
+			><span style="transform: rotate(-45deg); display: inline-block; transform-origin: center"
+				>R</span
+			></button
 		>
 		<select
 			bind:value={currentFrameIndex}
 			disabled={$URLList.length === 0}
 			style={`background-color:rgb(${calculateLoad(load)},0,0)`}
 		>
+			<option value="-1">HOME</option>
 			{#each $URLList as url, index}
 				<option value={index}>{index}:{new URL(url).hostname.toUpperCase()}({url})</option>
 			{/each}
 		</select>
 		<input name="url" type="url" />
-		<button type="submit">Add</button>
-		<button on:click={copy}>Copy</button>
-		<button on:dblclick={remove} disabled={$URLList.length === 0}>Remove</button>
+		<button type="submit">New</button>
+		<button on:click={copy}>Clone</button>
+		<button on:click={remove} disabled={$URLList.length === 0}>RM</button>
 	</form>
 	<div class="window">
 		{#each $URLList as url, index}
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
 				src={url}
-				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${index === currentFrameIndex ? '0' : '-100%'}; z-index: 99`}
+				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${index === currentFrameIndex ? '0' : '-100%'}; opacity: ${index === currentFrameIndex ? 1 : 0}; z-index: 99`}
 			></iframe>
 		{/each}
 	</div>
-</div>
-<div class="info">
-	{navigator.userAgent}
+	<div class="info">
+		<div>{navigator.userAgent}</div>
+		{#await (async () => {
+			const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
+			const text = await res.text();
+			if (text.includes('loc=CN')) {
+				throw new Error('YOU ARE USING CHINA INTERNET!');
+			} else {
+				return text;
+			}
+		})()}
+			<span>...Checking Github Connection Availability</span>
+		{:then _}
+			<a href="https://github.com/intzaaa/frames/">Source Code</a>
+		{:catch _}
+			<span>Source Code: https://github.com/intzaaa/frames/</span>
+		{/await}
+	</div>
 </div>
 
 <style lang="postcss">
 	:global(*) {
-		@apply box-border origin-top-left;
+		@apply box-border origin-top-left transition-all duration-300;
 	}
 	:global(body) {
 		height: 100vh; /* For browsers that don't support CSS variables */
 		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
 		height: 100dvh; /* This is for future browsers that support svh, dvh and lvh viewport units */
-		background-image: url('Iflytek_Suzhou_Branch_and_Institute.jpg');
+		background-image: url('/Iflytek_Suzhou_Branch_and_Institute.jpg');
 		background-position: center;
 		background-size: cover;
 		@apply m-0 overflow-hidden p-0;
@@ -142,7 +190,7 @@
 		@apply absolute flex h-full w-full flex-col;
 	}
 	.header {
-		@apply left-0 top-0 flex h-fit w-full flex-row bg-black font-mono text-white;
+		@apply left-0 top-0 z-10 flex h-fit w-full flex-row bg-black font-mono text-white;
 	}
 	.header select {
 		@apply w-36 bg-blue-800 outline-none;
@@ -162,9 +210,9 @@
 		@apply h-full w-full grow;
 	}
 	.window iframe {
-		@apply absolute h-full w-full;
+		@apply absolute h-full w-full duration-700;
 	}
 	.info {
-		@apply absolute bottom-4 left-4 -z-10 font-mono text-xs text-white;
+		@apply absolute bottom-0 z-0 p-8 font-mono text-xs text-white opacity-75;
 	}
 </style>
