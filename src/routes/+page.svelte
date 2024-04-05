@@ -72,6 +72,7 @@
 
 	import * as _ from 'remeda';
 	import { sha1 } from 'js-sha1';
+	import * as builtIn from '$lib/func/index';
 	$: currentFrameIndex = -1;
 	$: {
 		if (localStorage.getItem('currentFrameIndex')) {
@@ -99,17 +100,45 @@
 			return false;
 		}
 	}
-	function add(event: Event) {
+	$: logs = new Array();
+	logs = new Array<string>();
+	function call(event: Event) {
 		event.preventDefault();
 		if (event.target instanceof HTMLFormElement) {
+			event.target.blur();
 			let formElement: HTMLFormElement = event.target;
 			let formData = new FormData(formElement);
-			let url = formData.get('url')?.toString();
+			let url = new URL(formData.get('url')?.toString()!);
+			const inputs = url.href.split('::').toSpliced(0, 1);
+			let command: string;
+			let result: string;
 			if (url) {
-				URLList.add(new URL(url));
-				currentFrameIndex = $URLList.length - 1;
+				switch (url.protocol) {
+					case 'func:':
+						command = `eval("builtIn.${inputs[0]}")(${inputs
+							.toSpliced(0, 1)
+							.map((i) => `"${i}"`)
+							.join(', ')})`;
+						logs.push('> ' + command);
+						console.log(command);
+						result = String(eval(command));
+						logs = [...logs, result];
+						console.log(result);
+						break;
+					case 'script:':
+						command = inputs.join('::');
+						logs.push('> ' + command);
+						result = String(eval(command));
+						logs = [...logs, result];
+						console.log(result);
+						break;
+					default:
+						URLList.add(url);
+						currentFrameIndex = $URLList.length - 1;
+						break;
+				}
+				formElement.reset();
 			}
-			event.target.url.value = '';
 		}
 	}
 	function clone(event: Event) {
@@ -134,7 +163,7 @@
 	class="main"
 	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$windowSize.height + formHeight}px; width: ${$windowSize.width}px`}
 >
-	<form bind:clientHeight={formHeight} on:submit={add} class="header">
+	<form bind:clientHeight={formHeight} on:submit={call} class="header">
 		<button
 			on:click={(event) => {
 				if (isKeyClick(event)) return;
@@ -156,7 +185,10 @@
 				>
 			{/each}
 		</select>
+		<!-- svelte-ignore a11y-autofocus -->
 		<input
+			autofocus
+			autocomplete=""
 			name="url"
 			type="url"
 			placeholder={Number(currentFrameIndex) === -1
@@ -185,6 +217,20 @@
 	<div class="info">
 		<img src={logo} alt="logo" style="filter: invert(100%);" />
 		<div><b>Beyond the frames, naturally.</b></div>
+		{#if logs.length !== 0}
+			<details class="logs">
+				<summary>Logs</summary>
+				<div>
+					{#each logs as log}
+						{#if String(log).startsWith('> ')}
+							<div><b>{log}</b></div>
+						{:else}
+							<div>{log}</div>
+						{/if}
+					{/each}
+				</div>
+			</details>
+		{/if}
 		<details class="info-verbose">
 			<summary>Verbose</summary>
 			<div>Version: {version}</div>
@@ -252,12 +298,9 @@
 		@apply absolute h-full w-full bg-gray-50 duration-700;
 	}
 	.info {
-		@apply absolute bottom-0 z-0 p-8 font-mono  text-white opacity-75 hover:opacity-100;
+		@apply absolute bottom-0 z-0 w-4/5 p-8 font-mono  text-white opacity-75 hover:opacity-100;
 	}
 	.info * {
 		@apply text-xs;
-	}
-	.info:hover * {
-		@apply text-sm;
 	}
 </style>
