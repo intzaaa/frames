@@ -224,7 +224,7 @@
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
 				src={encode(uniqueURL.url.href)}
-				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${-(($URLList.findIndex((i) => i.id === currentFrameId) - index) * 100)}%; z-index: 99`}
+				style={`top: calc(${formHeight}px - ${($URLList.findIndex((i) => i.id === currentFrameId) - index) * 100}%); height: ${$windowSize.height}px; z-index: 49`}
 			></iframe>
 		{/each}
 	</div>
@@ -289,7 +289,7 @@
 		@apply absolute flex h-full w-full flex-col;
 	}
 	.header {
-		@apply left-0 top-0 z-10 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white;
+		@apply left-0 top-0 z-50 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white;
 	}
 	.header select {
 		@apply w-fit min-w-12 max-w-48 bg-blue-800 outline-none disabled:hidden;
