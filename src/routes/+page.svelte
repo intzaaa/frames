@@ -74,6 +74,7 @@
 			url.searchParams.delete('restore');
 			globalThis.window.location.replace(url);
 		}
+		setInterval(() => globalThis.window.scrollTo(0, 0), 4);
 	});
 
 	import * as _ from 'remeda';
@@ -190,7 +191,7 @@
 			disabled={$URLList.length === 0}
 			style={`background-color:rgb(${calculateLoad(load)},0,0); appearance: none`}
 		>
-			<option value={`${deviceId} HOME`}>{deviceId} HOME</option>
+			<option value={deviceId}>{deviceId} HOME</option>
 			{#each $sortedURLList as uniqueURL, index}
 				<option value={uniqueURL.id}
 					>{uniqueURL.id.toUpperCase()} {uniqueURL.url.hostname.toUpperCase()}</option
