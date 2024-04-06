@@ -3,17 +3,23 @@
 	import logo from '$lib/logo.png';
 	import '../app.pcss';
 
-	let id: string;
+	let deviceId: string;
 	if (localStorage.getItem('id')) {
-		id = localStorage.getItem('id')!;
+		deviceId = localStorage.getItem('id')!;
 	} else {
-		id = sha1(Date.now().toString()).substr(0, 5).toUpperCase();
-		localStorage.setItem('id', id);
+		deviceId = sha1(Date.now().toString()).substr(0, 5).toUpperCase();
+		localStorage.setItem('id', deviceId);
 	}
 
-	import { version } from '$app/environment';
+	$: isAtHome = false;
+	$: {
+		isAtHome = currentFrameId === deviceId;
+		console.log([deviceId, currentFrameId, isAtHome]);
+	}
+
+	import { dev, version } from '$app/environment';
 	import { onMount } from 'svelte';
-	import { Window, windowSize, UniqueURL, URLList } from './store.js';
+	import { Window, windowSize, UniqueURL, URLList, sortedURLList } from './store.js';
 	let formHeight: number;
 	let window: Window;
 	$: rotate = 0;
@@ -73,22 +79,27 @@
 	import * as _ from 'remeda';
 	import { sha1 } from 'js-sha1';
 	import * as builtIn from '$lib/func/index';
-	$: currentFrameIndex = -1;
+	$: currentFrameId = deviceId;
 	$: {
-		if (localStorage.getItem('currentFrameIndex')) {
-			currentFrameIndex = parseInt(localStorage.getItem('currentFrameIndex') || '0');
+		if (!currentFrameId) {
+			currentFrameId = deviceId;
 		}
 	}
 	$: {
-		localStorage.setItem('currentFrameIndex', currentFrameIndex.toString());
-	}
-	$: {
-		if (Number(currentFrameIndex) > $URLList.length - 1) {
-			currentFrameIndex = $URLList.length - 1;
-		} else if (Number(currentFrameIndex) < -1) {
-			currentFrameIndex = -1;
+		if (localStorage.getItem('currentFrameId')) {
+			currentFrameId = localStorage.getItem('currentFrameId') || '';
 		}
 	}
+	$: {
+		localStorage.setItem('currentFrameId', currentFrameId);
+	}
+	// $: {
+	// 	if (Number(currentFrameIndex) > $URLList.length - 1) {
+	// 		currentFrameIndex = $URLList.length - 1;
+	// 	} else if (Number(currentFrameIndex) < -1) {
+	// 		currentFrameIndex = -1;
+	// 	}
+	// }
 	function isKeyClick(event: Event): boolean {
 		if (event instanceof PointerEvent) {
 			if (event.pointerId === -1) {
@@ -102,40 +113,20 @@
 	}
 	$: logs = new Array();
 	logs = new Array<string>();
-	function call(event: Event) {
+	function add(event: Event) {
 		event.preventDefault();
 		if (event.target instanceof HTMLFormElement) {
 			event.target.blur();
-			let formElement: HTMLFormElement = event.target;
-			let formData = new FormData(formElement);
-			let url = new URL(formData.get('url')?.toString()!);
+			const formElement: HTMLFormElement = event.target;
+			const formData = new FormData(formElement);
+			const url = new URL(formData.get('url')?.toString()!);
 			const inputs = url.href.split('::').toSpliced(0, 1);
 			let command: string;
 			let result: string;
 			if (url) {
-				switch (url.protocol) {
-					case 'func:':
-						command = `eval("builtIn.${inputs[0]}")(${inputs
-							.toSpliced(0, 1)
-							.map((i) => `"${i}"`)
-							.join(', ')})`;
-						logs.push('> ' + command);
-						console.log(command);
-						result = String(eval(command));
-						logs = [...logs, result];
-						console.log(result);
-						break;
-					case 'script:':
-						command = inputs.join('::');
-						logs.push('> ' + command);
-						result = String(eval(command));
-						logs = [...logs, result];
-						console.log(result);
-						break;
-					default:
-						URLList.add(url);
-						currentFrameIndex = $URLList.length - 1;
-						break;
+				if (url.href.startsWith('http')) {
+					URLList.add(url);
+					currentFrameId = $URLList.at(-1)?.id!;
 				}
 				formElement.reset();
 			}
@@ -143,15 +134,35 @@
 	}
 	function clone(event: Event) {
 		if (isKeyClick(event)) return;
-		URLList.add($URLList[currentFrameIndex].url);
+		URLList.add($URLList.find((i) => i.id === currentFrameId)?.url!);
 	}
 	function remove(event: Event) {
 		if (isKeyClick(event)) return;
-		URLList.remove(currentFrameIndex);
-		currentFrameIndex = currentFrameIndex - 1;
+		const id = $URLList.findIndex((i) => i.id === currentFrameId);
+		URLList.remove(id);
+		if (id - 1 >= 0) {
+			currentFrameId = $URLList[id - 1].id;
+		} else {
+			currentFrameId = deviceId;
+		}
+	}
+	function encode(str: string): string {
+		var pattern = /\(\(encode::(.*?)\)\)/g;
+
+		// 使用 replace 函数查找和替换匹配的模式
+		var encodedStr = str.replace(pattern, function (_, value) {
+			// 对匹配的 value 进行编码
+			return builtIn.XOR.encode(value);
+		});
+
+		return encodedStr;
 	}
 	$: load = 0;
-	URLList.subscribe((i) => (load = i.length));
+	$: {
+		URLList.subscribe((i) => {
+			load = i.length;
+		});
+	}
 	function calculateLoad(load: number): number {
 		if (Math.log(load + 1) * 50 < 255) {
 			return Math.log(load + 1) * 50;
@@ -163,8 +174,9 @@
 	class="main"
 	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$windowSize.height + formHeight}px; width: ${$windowSize.width}px`}
 >
-	<form bind:clientHeight={formHeight} on:submit={call} class="header">
+	<form bind:clientHeight={formHeight} on:submit={add} class="header">
 		<button
+			type="button"
 			on:click={(event) => {
 				if (isKeyClick(event)) return;
 				rotate = rotate - 90;
@@ -174,13 +186,13 @@
 			></button
 		>
 		<select
-			bind:value={currentFrameIndex}
+			bind:value={currentFrameId}
 			disabled={$URLList.length === 0}
 			style={`background-color:rgb(${calculateLoad(load)},0,0); appearance: none`}
 		>
-			<option value={-1}>{id} HOME</option>
-			{#each $URLList as uniqueURL, index}
-				<option value={index}
+			<option value={`${deviceId} HOME`}>{deviceId} HOME</option>
+			{#each $sortedURLList as uniqueURL, index}
+				<option value={uniqueURL.id}
 					>{uniqueURL.id.toUpperCase()} {uniqueURL.url.hostname.toUpperCase()}</option
 				>
 			{/each}
@@ -191,17 +203,18 @@
 			autocomplete=""
 			name="url"
 			type="url"
-			placeholder={Number(currentFrameIndex) === -1
+			placeholder={isAtHome
 				? 'Start your surfing journey here...'
-				: $URLList[currentFrameIndex].url.pathname}
+				: $URLList.find((i) => i.id === currentFrameId)?.url.pathname}
 		/>
 		<button type="submit">New</button>
-		<button on:click={clone} disabled={$URLList.length === 0 || Number(currentFrameIndex) === -1}
+		<button type="button" on:click={clone} disabled={$URLList.length === 0 || isAtHome}
 			>Clone</button
 		>
 		<button
+			type="button"
 			on:click={remove}
-			disabled={$URLList.length === 0 || Number(currentFrameIndex) === -1}
+			disabled={$URLList.length === 0 || isAtHome}
 			style="color: red">X</button
 		>
 	</form>
@@ -209,8 +222,8 @@
 		{#each $URLList as uniqueURL, index}
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
-				src={uniqueURL.url.href}
-				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${index === currentFrameIndex ? '0' : '-100%'}; opacity: ${index === currentFrameIndex ? 1 : 0}; z-index: 99`}
+				src={encode(uniqueURL.url.href)}
+				style={`top: ${formHeight}px ;height: ${$windowSize.height}px; left: ${-(($URLList.findIndex((i) => i.id === currentFrameId) - index) * 100)}%; z-index: 99`}
 			></iframe>
 		{/each}
 	</div>

@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 
 class Window {
 	constructor(height: number, width: number) {
@@ -65,4 +65,12 @@ export const URLList = createURLList();
 
 URLList.subscribe((i) => {
 	localStorage.setItem('UniqueURLList', JSON.stringify(i));
+});
+
+export const sortedURLList = derived(URLList, (i) => {
+	return i.toSorted((a, b) => {
+		const ah = a.url.hostname.toLowerCase();
+		const bh = b.url.hostname.toLowerCase();
+		return ah.localeCompare(bh, 'en');
+	});
 });
