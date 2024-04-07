@@ -17,7 +17,7 @@
 		console.log([deviceId, currentFrameId, isAtHome]);
 	}
 
-	import { dev, version } from '$app/environment';
+	import { version } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { Window, windowSize, UniqueURL, URLList, sortedURLList } from './store.js';
 	let formHeight: number;
@@ -74,7 +74,7 @@
 			url.searchParams.delete('restore');
 			globalThis.window.location.replace(url);
 		}
-		setInterval(() => globalThis.window.scrollTo(0, 0), 4);
+		setInterval(() => globalThis.window.scrollTo(0, 0), 25);
 	});
 
 	import * as _ from 'remeda';
