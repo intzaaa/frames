@@ -82,13 +82,8 @@
 	import * as builtIn from '$lib/func/index';
 	$: currentFrameId = deviceId;
 	$: {
-		if (!currentFrameId) {
-			currentFrameId = deviceId;
-		}
-	}
-	$: {
 		if (localStorage.getItem('currentFrameId')) {
-			currentFrameId = localStorage.getItem('currentFrameId') || '';
+			currentFrameId = localStorage.getItem('currentFrameId') ?? deviceId;
 		}
 	}
 	$: {
@@ -220,11 +215,11 @@
 		>
 	</form>
 	<div class="window">
-		{#each $URLList as uniqueURL, index}
+		{#each $sortedURLList as uniqueURL, index}
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
 				src={encode(uniqueURL.url.href)}
-				style={`top: calc(${formHeight}px - ${($URLList.findIndex((i) => i.id === currentFrameId) - index) * 100}%); height: ${$windowSize.height}px; z-index: 49`}
+				style={`top: calc(${formHeight}px - ${($sortedURLList.findIndex((i) => i.id === currentFrameId) - index) * 100}%); height: ${$windowSize.height}px; z-index: 49`}
 			></iframe>
 		{/each}
 	</div>
@@ -274,6 +269,9 @@
 	:global(*) {
 		@apply box-border origin-top-left transition-all duration-300;
 	}
+	:global(html) {
+		@apply overflow-hidden;
+	}
 	:global(body) {
 		height: 100vh; /* For browsers that don't support CSS variables */
 		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
@@ -286,7 +284,7 @@
 		@apply m-0 w-full overflow-hidden p-0 transition-none;
 	}
 	.main {
-		@apply absolute flex h-full w-full flex-col;
+		@apply absolute flex h-full w-full flex-col overflow-hidden;
 	}
 	.header {
 		@apply left-0 top-0 z-50 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white;
