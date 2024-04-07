@@ -215,11 +215,11 @@
 		>
 	</form>
 	<div class="window">
-		{#each $sortedURLList as uniqueURL, index}
+		{#each $sortedURLList as uniqueURL (uniqueURL.id)}
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
 				src={encode(uniqueURL.url.href)}
-				style={`top: calc(${formHeight}px - ${($sortedURLList.findIndex((i) => i.id === currentFrameId) - index) * 100}%); height: ${$windowSize.height}px; z-index: 49`}
+				style={`top: calc(${formHeight}px - ${($sortedURLList.findIndex((i) => i.id === currentFrameId) - $sortedURLList.findIndex((i) => i.id === uniqueURL.id)) * 100}%); height: ${$windowSize.height}px; z-index: 49`}
 			></iframe>
 		{/each}
 	</div>
