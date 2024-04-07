@@ -245,21 +245,7 @@
 			<div>Version: {version}</div>
 			<div>User-Agent: {navigator.userAgent}</div>
 			<div class="source">
-				{#await (async () => {
-					const res = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-					const text = await res.text();
-					if (text.includes('loc=CN')) {
-						throw new Error('YOU ARE USING CHINA INTERNET!');
-					} else {
-						return text;
-					}
-				})()}
-					<span>...Checking Github Connection Availability</span>
-				{:then _}
-					<u><a href="https://github.com/intzaaa/frames/">Source Code</a></u>
-				{:catch _}
-					<span>Source Code: <u>https://github.com/intzaaa/frames</u></span>
-				{/await}
+				Source Code: <u>https://github.com/intzaaa/frames</u>
 			</div>
 		</details>
 	</div>
