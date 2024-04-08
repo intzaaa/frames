@@ -1,4 +1,4 @@
-import 'core-js/full';
+import 'core-js/stable';
 import 'regenerator-runtime/runtime';
 
 export const ssr = false;
