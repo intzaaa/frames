@@ -185,10 +185,19 @@ function createFrameList() {
 
 export const FrameList = createFrameList();
 
+function tryStoreFrameList(v: Array<Frame>) {
+	try {
+		v.forEach((i) => {
+			if (i.mode === 'proxy' && i.targetURL?.hostname == undefined) {
+				throw new Error('Invalid URL');
+			}
+		});
+		localStorage.setItem('FrameList', JSON.stringify(v));
+	} catch (error) {}
+}
+
 FrameList.subscribe((i) => {
-	localStorage.setItem('FrameList', JSON.stringify(i));
+	tryStoreFrameList(i);
 });
 
-targetURLEmitter.on('*', () =>
-	localStorage.setItem('FrameList', JSON.stringify(get(FrameList) as Array<Frame>))
-);
+targetURLEmitter.on('*', () => tryStoreFrameList(get(FrameList) as Array<Frame>));
