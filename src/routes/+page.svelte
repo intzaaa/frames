@@ -191,7 +191,7 @@
 				rotate = rotate - 90;
 			}}
 			><span style="transform: rotate(-45deg); display: inline-block; transform-origin: center"
-				>♻</span
+				>◯</span
 			></button
 		>
 		<select
@@ -203,7 +203,7 @@
 			{#each $FrameList as frame}
 				<option value={frame.id}>
 					{frame.id.toUpperCase()}
-					{#key input?.value}
+					{#key currentFrame?.targetURL?.href}
 						{(frame.mode === 'proxy' ? frame.targetURL : frame.url)?.hostname?.toUpperCase()}
 					{/key}
 				</option>
