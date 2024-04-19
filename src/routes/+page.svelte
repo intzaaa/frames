@@ -123,7 +123,7 @@
 				return new URL(url);
 			} catch (error) {
 				try {
-					return new URL(`http://${url}`);
+					return new URL(`https://${url}`);
 				} catch (error) {
 					return fallbackURL;
 				}
