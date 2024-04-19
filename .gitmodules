@@ -1,0 +1,3 @@
+[submodule "src/lib/Ultraviolet"]
+	path = src/lib/Ultraviolet
+	url = https://github.com/intzaaa/Ultraviolet

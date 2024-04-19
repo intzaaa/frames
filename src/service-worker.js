@@ -36,6 +36,7 @@ self.addEventListener('fetch', (event) => {
 
 	async function respond() {
 		const url = new URL(event.request.url);
+		if (!url.protocol.startsWith("http")) return;
 		const cache = await caches.open(CACHE);
 
 		// `build`/`files` can always be served from the cache

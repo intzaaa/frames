@@ -1,7 +1,12 @@
 <script lang="ts">
 	import 'large-small-dynamic-viewport-units-polyfill';
-	import logo from '$lib/logo.png';
+	import logo from '$lib/iflytek.svg';
 	import '../app.pcss';
+	import { version } from '$app/environment';
+	import { onMount } from 'svelte';
+	import * as _ from 'remeda';
+	import { sha1 } from 'js-sha1';
+	import { DisplayArea, displayAreaSize, Frame, FrameList, targetURLEmitter } from './utilities.js';
 
 	let deviceId: string;
 	if (localStorage.getItem('id')) {
@@ -16,12 +21,8 @@
 		isAtHome = currentFrameId === deviceId;
 		console.log([deviceId, currentFrameId, isAtHome]);
 	}
-
-	import { version } from '$app/environment';
-	import { onMount } from 'svelte';
-	import { Window, windowSize, UniqueURL, URLList, sortedURLList } from './store.js';
 	let formHeight: number;
-	let window: Window;
+	let window: DisplayArea;
 	$: rotate = 0;
 	$: {
 		if (localStorage.getItem('rotate')) {
@@ -30,40 +31,76 @@
 	}
 	$: topOffset = 0;
 	$: leftOffset = 0;
-	$: {
-		windowSpy(rotate);
-	}
+	$: rotate, windowSpy();
 	$: {
 		localStorage.setItem('rotate', rotate.toString());
 	}
+	$: load = 0;
+	$: {
+		load = $FrameList.length;
+	}
+	function calculateLoad(load: number): number {
+		if (Math.log(load + 1) * 50 < 255) {
+			return Math.log(load + 1) * 50;
+		} else return 255;
+	}
+	let form: HTMLFormElement;
+	let input: HTMLInputElement;
+	$: currentFrameId = deviceId;
+	$: {
+		if (localStorage.getItem('currentFrameId')) {
+			currentFrameId = localStorage.getItem('currentFrameId') ?? deviceId;
+		}
+	}
+	$: {
+		localStorage.setItem('currentFrameId', currentFrameId);
+	}
+	$: currentFrame = $FrameList.find((i) => i.id === currentFrameId);
+	$: {
+		currentFrameId, targetURLEmitter.emit(currentFrameId, currentFrame?.targetURL);
+	}
 
-	function windowSpy(..._: any) {
+	targetURLEmitter.on('*', (id, targetURL) => {
+		if (currentFrameId === id && input) {
+			input.value = targetURL?.href ?? '';
+			console.log('TargetEvent', id, targetURL?.href!);
+		}
+	});
+
+	$: isProxyMode = false;
+	$: {
+		if (currentFrame?.mode === 'proxy') {
+			isProxyMode = true;
+		}
+	}
+
+	function windowSpy() {
 		let height = globalThis.document.body.clientHeight;
 		let width = globalThis.document.body.clientWidth;
-		console.log(new Window(height, width));
+		console.log(new DisplayArea(height, width));
 		switch (rotate % 360) {
 			case 0:
 				topOffset = 0;
 				leftOffset = 0;
-				window = new Window(height - formHeight, width);
+				window = new DisplayArea(height - formHeight, width);
 				break;
 			case -180:
 				topOffset = height;
 				leftOffset = width;
-				window = new Window(height - formHeight, width);
+				window = new DisplayArea(height - formHeight, width);
 				break;
 			case -90:
 				topOffset = height;
 				leftOffset = 0;
-				window = new Window(width - formHeight, height);
+				window = new DisplayArea(width - formHeight, height);
 				break;
 			case -270:
 				topOffset = 0;
 				leftOffset = width;
-				window = new Window(width - formHeight, height);
+				window = new DisplayArea(width - formHeight, height);
 				break;
 		}
-		windowSize.set(window);
+		displayAreaSize.set(window);
 	}
 
 	onMount(() => {
@@ -77,169 +114,156 @@
 		setInterval(() => globalThis.window.scrollTo(0, 0), 25);
 	});
 
-	import * as _ from 'remeda';
-	import { sha1 } from 'js-sha1';
-	import * as builtIn from '$lib/func/index';
-	$: currentFrameId = deviceId;
-	$: {
-		if (localStorage.getItem('currentFrameId')) {
-			currentFrameId = localStorage.getItem('currentFrameId') ?? deviceId;
-		}
-	}
-	$: {
-		localStorage.setItem('currentFrameId', currentFrameId);
-	}
-	// $: {
-	// 	if (Number(currentFrameIndex) > $URLList.length - 1) {
-	// 		currentFrameIndex = $URLList.length - 1;
-	// 	} else if (Number(currentFrameIndex) < -1) {
-	// 		currentFrameIndex = -1;
-	// 	}
-	// }
-	function isKeyClick(event: Event): boolean {
-		if (event instanceof PointerEvent) {
-			if (event.pointerId === -1) {
-				return true;
-			} else {
-				return false;
-			}
+	function autoCompleteURLProtocol(url: string | undefined): URL {
+		const fallbackURL = new URL('https://www.iflytek.com');
+		if (!url) {
+			return fallbackURL;
 		} else {
-			return false;
-		}
-	}
-	$: logs = new Array();
-	logs = new Array<string>();
-	function add(event: Event) {
-		event.preventDefault();
-		if (event.target instanceof HTMLFormElement) {
-			event.target.blur();
-			const formElement: HTMLFormElement = event.target;
-			const formData = new FormData(formElement);
-			const url = new URL(formData.get('url')?.toString()!);
-			const inputs = url.href.split('::').toSpliced(0, 1);
-			let command: string;
-			let result: string;
-			if (url) {
-				if (url.href.startsWith('http')) {
-					URLList.add(url);
-					currentFrameId = $URLList.at(-1)?.id!;
+			try {
+				return new URL(url);
+			} catch (error) {
+				try {
+					return new URL(`http://${url}`);
+				} catch (error) {
+					return fallbackURL;
 				}
-				formElement.reset();
 			}
 		}
+	}
+
+	function add(event: Event) {
+		form.blur();
+		const url = autoCompleteURLProtocol(form.input.value);
+		let frame: Frame;
+		switch (isProxyMode) {
+			case false:
+				frame = Frame.Direct(url);
+				FrameList.add(frame);
+				break;
+			case true:
+				frame = Frame.Proxy(url);
+				FrameList.add(frame);
+				break;
+		}
+		currentFrameId = frame.id;
+		form.reset();
+	}
+	function adjust(event: Event) {
+		currentFrame!.targetURL = autoCompleteURLProtocol(input.value);
+		form.reset();
 	}
 	function clone(event: Event) {
-		if (isKeyClick(event)) return;
-		URLList.add($URLList.find((i) => i.id === currentFrameId)?.url!);
+		switch (currentFrame?.mode) {
+			case 'direct':
+				FrameList.add(Frame.Direct(currentFrame.src));
+				break;
+			case 'proxy':
+				FrameList.add(Frame.Proxy(currentFrame.targetURL!));
+				break;
+		}
 	}
 	function remove(event: Event) {
-		if (isKeyClick(event)) return;
-		const id = $URLList.findIndex((i) => i.id === currentFrameId);
-		URLList.remove(id);
+		const id = $FrameList.findIndex((i) => i.id === currentFrameId);
+		FrameList.remove(id);
 		if (id - 1 >= 0) {
-			currentFrameId = $URLList[id - 1].id;
+			currentFrameId = $FrameList[id - 1].id;
 		} else {
 			currentFrameId = deviceId;
 		}
-	}
-	function encode(str: string): string {
-		var pattern = /\(\(encode::(.*?)\)\)/g;
-
-		// 使用 replace 函数查找和替换匹配的模式
-		var encodedStr = str.replace(pattern, function (_, value) {
-			// 对匹配的 value 进行编码
-			return builtIn.XOR.encode(value);
-		});
-
-		return encodedStr;
-	}
-	$: load = 0;
-	$: {
-		URLList.subscribe((i) => {
-			load = i.length;
-		});
-	}
-	function calculateLoad(load: number): number {
-		if (Math.log(load + 1) * 50 < 255) {
-			return Math.log(load + 1) * 50;
-		} else return 255;
 	}
 </script>
 
 <div
 	class="main"
-	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$windowSize.height + formHeight}px; width: ${$windowSize.width}px`}
+	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$displayAreaSize.height + formHeight}px; width: ${$displayAreaSize.width}px`}
 >
-	<form bind:clientHeight={formHeight} on:submit={add} class="header">
+	<form
+		bind:this={form}
+		bind:clientHeight={formHeight}
+		on:submit|preventDefault={isProxyMode && currentFrame?.mode === 'proxy' ? adjust : add}
+		class="header"
+	>
 		<button
 			type="button"
 			on:click={(event) => {
-				if (isKeyClick(event)) return;
 				rotate = rotate - 90;
 			}}
 			><span style="transform: rotate(-45deg); display: inline-block; transform-origin: center"
-				>R</span
+				>♻</span
 			></button
 		>
 		<select
 			bind:value={currentFrameId}
-			disabled={$URLList.length === 0}
+			disabled={$FrameList.length === 0}
 			style={`background-color:rgb(${calculateLoad(load)},0,0); appearance: none`}
 		>
 			<option value={deviceId}>{deviceId} HOME</option>
-			{#each $sortedURLList as uniqueURL, index}
-				<option value={uniqueURL.id}
-					>{uniqueURL.id.toUpperCase()} {uniqueURL.url.hostname.toUpperCase()}</option
+			{#each $FrameList as frame}
+				<option value={frame.id}
+					>{frame.id.toUpperCase()}
+					{(frame.mode === 'proxy' ? frame.targetURL : frame.url)?.hostname?.toUpperCase()}</option
 				>
 			{/each}
 		</select>
-		<!-- svelte-ignore a11y-autofocus -->
 		<input
-			autofocus
+			bind:this={input}
 			autocomplete=""
-			name="url"
-			type="url"
+			name="input"
+			type="text"
 			placeholder={isAtHome
-				? 'Start your surfing journey here...'
-				: $URLList.find((i) => i.id === currentFrameId)?.url.pathname}
+				? 'You are standing in an open field west of a white house, with a boarded front door...'
+				: currentFrame?.url.pathname}
 		/>
-		<button type="submit">New</button>
-		<button type="button" on:click={clone} disabled={$URLList.length === 0 || isAtHome}
-			>Clone</button
+
+		<button
+			type="button"
+			on:click={() => {
+				currentFrame?.element?.contentWindow?.history.back();
+			}}
+			disabled={currentFrame?.mode !== 'proxy' || isAtHome}>B</button
 		>
 		<button
 			type="button"
+			on:click={() => {
+				currentFrame?.element?.contentWindow?.history.forward();
+			}}
+			disabled={currentFrame?.mode !== 'proxy' || isAtHome}>F</button
+		>
+		<button
+			type="button"
+			on:click={() => {
+				currentFrame?.element?.contentWindow?.location.reload();
+			}}
+			disabled={currentFrame?.mode !== 'proxy' || isAtHome}>R</button
+		>
+		<button
+			type="button"
+			on:click={(event) => {
+				isProxyMode = !isProxyMode;
+			}}
+			class:switch-on={isProxyMode}>{isProxyMode ? 'P' : 'D'}</button
+		>
+		<button type="submit">A</button>
+		<button type="button" on:click={clone} disabled={$FrameList.length === 0 || isAtHome}>C</button>
+		<button
+			type="button"
 			on:click={remove}
-			disabled={$URLList.length === 0 || isAtHome}
+			disabled={$FrameList.length === 0 || isAtHome}
 			style="color: red">X</button
 		>
 	</form>
 	<div class="window">
-		{#each $sortedURLList as uniqueURL (uniqueURL.id)}
+		{#each $FrameList as frame (frame.id)}
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
-				src={encode(uniqueURL.url.href)}
-				style={`top: calc(${formHeight}px - ${($sortedURLList.findIndex((i) => i.id === currentFrameId) - $sortedURLList.findIndex((i) => i.id === uniqueURL.id)) * 100}%); height: ${$windowSize.height}px; z-index: 49`}
+				bind:this={frame.element}
+				src={frame.src.href}
+				style={`top: calc(${formHeight}px - ${($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%); height: ${$displayAreaSize.height}px; z-index: 49`}
 			></iframe>
 		{/each}
 	</div>
 	<div class="info">
-		<img src={logo} alt="logo" style="filter: invert(100%);" />
-		<div><b>Beyond the frames, naturally.</b></div>
-		{#if logs.length !== 0}
-			<details class="logs">
-				<summary>Logs</summary>
-				<div>
-					{#each logs as log}
-						{#if String(log).startsWith('> ')}
-							<div><b>{log}</b></div>
-						{:else}
-							<div>{log}</div>
-						{/if}
-					{/each}
-				</div>
-			</details>
-		{/if}
+		<h1 class="title">Beyond the frames, naturally.</h1>
 		<details class="info-verbose">
 			<summary>Verbose</summary>
 			<div>Version: {version}</div>
@@ -269,6 +293,9 @@
 
 		@apply m-0 w-full overflow-hidden p-0 transition-none;
 	}
+	.title {
+		@apply text-4xl font-bold;
+	}
 	.main {
 		@apply absolute flex h-full w-full flex-col overflow-hidden;
 	}
@@ -276,10 +303,11 @@
 		@apply left-0 top-0 z-50 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white;
 	}
 	.header select {
-		@apply w-fit min-w-12 max-w-48 bg-blue-800 outline-none disabled:hidden;
+		box-sizing: content-box;
+		@apply w-[5ch]  bg-blue-800 outline-none disabled:opacity-50;
 	}
 	.header input {
-		@apply w-auto min-w-4 grow border-0 bg-blue-950 outline-none;
+		@apply w-auto min-w-4 grow text-ellipsis border-0 bg-blue-950 outline-none;
 	}
 	.header button {
 		@apply w-fit active:font-bold disabled:opacity-50;
@@ -287,7 +315,7 @@
 	.header > * {
 		border-left-width: 1.125px !important;
 		border-right-width: 1.125px !important;
-		@apply border-solid border-blue-600 pl-2 pr-2;
+		@apply appearance-none border-solid border-blue-600 pl-2 pr-2;
 	}
 	.window {
 		@apply h-full w-full grow;
@@ -300,5 +328,8 @@
 	}
 	.info * {
 		@apply text-xs;
+	}
+	.switch-on {
+		@apply bg-green-500;
 	}
 </style>
