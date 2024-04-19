@@ -293,9 +293,6 @@
 
 		@apply m-0 w-full overflow-hidden p-0 transition-none;
 	}
-	.title {
-		@apply text-4xl font-bold;
-	}
 	.main {
 		@apply absolute flex h-full w-full flex-col overflow-hidden;
 	}

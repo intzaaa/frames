@@ -61,8 +61,8 @@ type FrameMode = 'direct' | 'proxy';
 export class Frame {
 	constructor(src: URL, mode: FrameMode, url?: URL, id?: string) {
 		this.mode = mode;
-		this.src = url || src;
-		this._url = url || src;
+		this.src = url ?? src;
+		this._url = url ?? src;
 		this.id = id || sha1(Math.random().toString()).substr(0, 5);
 		if (mode === 'proxy') {
 			targetURLEmitter.emit(this.id, this.targetURL);
