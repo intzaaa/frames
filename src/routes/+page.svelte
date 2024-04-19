@@ -174,10 +174,12 @@
 </script>
 
 <div
+	id="main"
 	class="main"
 	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$displayAreaSize.height + formHeight}px; width: ${$displayAreaSize.width}px`}
 >
 	<form
+		id="form"
 		bind:this={form}
 		bind:clientHeight={formHeight}
 		on:submit|preventDefault={isProxyMode && currentFrame?.mode === 'proxy' ? adjust : add}

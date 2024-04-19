@@ -49,7 +49,7 @@ const xor = {
 };
 
 function encodeTargetURLToProxyURL(url: URL): URL {
-	return new URL(proxyPrefix + xor.encode(url.href), globalThis.location.href);
+	return new URL(proxyPrefix + xor.encode(url.href), globalThis.location.origin);
 }
 
 function decodeTargetURLFromProxyURL(url: URL): URL {

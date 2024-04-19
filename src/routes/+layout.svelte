@@ -5,7 +5,14 @@
 	});
 </script>
 
-<svelte:body lang="en-US" />
+<svelte:body
+	lang="en-US"
+	on:click={(event) => {
+		if (event.target instanceof HTMLBodyElement) {
+			globalThis.window.scrollTo(0, 0);
+		}
+	}}
+/>
 
 <svelte:head>
 	<title>Frames</title>
