@@ -158,12 +158,13 @@ function createFrameList() {
 	const { subscribe, set, update } = writable(URLList);
 
 	const sortUpdate = (func: Updater<Frame[]>) =>
-		update((n) =>
-			func(n).toSorted((a, b) => {
-				const ah = a.url.hostname.toLowerCase();
-				const bh = b.url.hostname.toLowerCase();
-				return ah.localeCompare(bh, 'en');
-			})
+		update(
+			(n) => func(n)
+			// func(n).toSorted((a, b) => {
+			// 	const ah = a.url.hostname.toLowerCase();
+			// 	const bh = b.url.hostname.toLowerCase();
+			// 	return ah.localeCompare(bh, 'en');
+			// })
 		);
 
 	return {

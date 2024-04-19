@@ -57,7 +57,7 @@
 	}
 	$: currentFrame = $FrameList.find((i) => i.id === currentFrameId);
 	$: {
-		currentFrameId, targetURLEmitter.emit(currentFrameId, currentFrame?.targetURL);
+		if (currentFrameId) targetURLEmitter.emit(currentFrameId, currentFrame?.targetURL);
 	}
 
 	targetURLEmitter.on('*', (id, targetURL) => {
@@ -146,11 +146,11 @@
 				break;
 		}
 		currentFrameId = frame.id;
-		form.reset();
+		input.value = '';
 	}
 	function adjust(event: Event) {
 		currentFrame!.targetURL = autoCompleteURLProtocol(input.value);
-		form.reset();
+		input.value = '';
 	}
 	function clone(event: Event) {
 		switch (currentFrame?.mode) {
@@ -163,10 +163,10 @@
 		}
 	}
 	function remove(event: Event) {
-		const id = $FrameList.findIndex((i) => i.id === currentFrameId);
-		FrameList.remove(id);
-		if (id - 1 >= 0) {
-			currentFrameId = $FrameList[id - 1].id;
+		const index = $FrameList.findIndex((i) => i.id === currentFrameId);
+		FrameList.remove(index);
+		if (index - 1 >= 0) {
+			currentFrameId = $FrameList[index - 1].id;
 		} else {
 			currentFrameId = deviceId;
 		}
@@ -199,10 +199,12 @@
 		>
 			<option value={deviceId}>{deviceId} HOME</option>
 			{#each $FrameList as frame}
-				<option value={frame.id}
-					>{frame.id.toUpperCase()}
-					{(frame.mode === 'proxy' ? frame.targetURL : frame.url)?.hostname?.toUpperCase()}</option
-				>
+				<option value={frame.id}>
+					{frame.id.toUpperCase()}
+					{#key input?.value}
+						{(frame.mode === 'proxy' ? frame.targetURL : frame.url)?.hostname?.toUpperCase()}
+					{/key}
+				</option>
 			{/each}
 		</select>
 		<input
@@ -257,6 +259,7 @@
 			<!-- svelte-ignore a11y-missing-attribute -->
 			<iframe
 				bind:this={frame.element}
+				class:pointer-none={frame.id !== currentFrameId}
 				src={frame.src.href}
 				style={`top: calc(${formHeight}px - ${($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%); height: ${$displayAreaSize.height}px; z-index: 49`}
 			></iframe>
@@ -325,6 +328,9 @@
 	}
 	.info * {
 		@apply text-xs;
+	}
+	.pointer-none {
+		@apply pointer-events-none;
 	}
 	.switch-on {
 		@apply bg-green-500;
