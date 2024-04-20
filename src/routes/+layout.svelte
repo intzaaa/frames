@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { dev } from '$app/environment';
-	navigator.serviceWorker.register('/service-worker.js', {
+	navigator.serviceWorker.register('/sw.js', {
+		scope: '/',
 		type: dev ? 'module' : 'classic'
 	});
 </script>
