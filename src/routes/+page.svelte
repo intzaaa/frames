@@ -281,23 +281,6 @@
 </div>
 
 <style lang="postcss">
-	:global(*) {
-		@apply box-border origin-top-left transition-all duration-300;
-	}
-	:global(html) {
-		@apply overflow-hidden;
-	}
-	:global(body) {
-		height: 100vh; /* For browsers that don't support CSS variables */
-		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
-		height: 100dvh; /* This is for future browsers that support svh, dvh and lvh viewport units */
-
-		background-image: url('/Iflytek_Suzhou_Branch_and_Institute.jpg');
-		background-position: center;
-		background-size: cover;
-
-		@apply m-0 w-full overflow-hidden p-0 transition-none;
-	}
 	.main {
 		@apply absolute flex h-full w-full flex-col overflow-hidden;
 	}
