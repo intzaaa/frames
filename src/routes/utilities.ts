@@ -5,6 +5,12 @@ type Events = {
 	[id: string]: URL | undefined;
 };
 export const targetURLEmitter = mitt<Events>();
+import type * as CSS from 'csstype';
+import styleToCss from 'style-object-to-css-string';
+
+export function s(css: CSS.Properties): string {
+	return styleToCss(css);
+}
 
 export class DisplayArea {
 	constructor(height: number, width: number) {

@@ -6,7 +6,14 @@
 	import { onMount } from 'svelte';
 	import * as _ from 'remeda';
 	import { sha1 } from 'js-sha1';
-	import { DisplayArea, displayAreaSize, Frame, FrameList, targetURLEmitter } from './utilities.js';
+	import {
+		DisplayArea,
+		displayAreaSize,
+		Frame,
+		FrameList,
+		s,
+		targetURLEmitter
+	} from './utilities.js';
 
 	let deviceId: string;
 	if (localStorage.getItem('id')) {
@@ -267,7 +274,12 @@
 			></iframe>
 		{/each}
 	</div>
-	<div class="info">
+	<div
+		class="info"
+		style={s({
+			zIndex: isAtHome ? 20 : 0
+		})}
+	>
 		<h1 class="title">Beyond the frames, naturally.</h1>
 		<details class="info-verbose">
 			<summary>Verbose</summary>
