@@ -277,7 +277,7 @@
 	<div
 		class="info"
 		style={s({
-			zIndex: isAtHome ? 20 : 0
+			display: !isAtHome ? 'none' : 'block'
 		})}
 	>
 		<h1 class="title">Beyond the frames, naturally.</h1>
