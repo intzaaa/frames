@@ -263,7 +263,7 @@
 				bind:this={frame.element}
 				class:pointer-none={frame.id !== currentFrameId}
 				src={frame.src.href}
-				style={`top: calc(${formHeight}px - ${($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%); height: ${$displayAreaSize.height}px; z-index: 49`}
+				style={`top: calc(${($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%); height: ${$displayAreaSize.height}px; z-index: 49`}
 			></iframe>
 		{/each}
 	</div>
