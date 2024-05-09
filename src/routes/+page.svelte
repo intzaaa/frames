@@ -141,7 +141,7 @@
 				class:pointer-none={frame.id !== currentFrameId}
 				src={frame.src.href}
 				style={s({
-					transform: `translateY(calc(${($FrameList.findIndex((i) => i.id === currentFrameId) + $FrameList.findIndex((i) => i.id === frame.id)) * 100}%)) scale(${zoom})`,
+					transform: `translateY(${-(($FrameList.findIndex((i) => i.id === currentFrameId) + $FrameList.findIndex((i) => i.id === frame.id)) * 100)}%) scale(${zoom})`,
 					width: `${100 / zoom}%`,
 					height: `${100 / zoom}%`,
 					zIndex: 49
