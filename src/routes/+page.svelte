@@ -161,6 +161,15 @@
 			type="button"
 			disabled={isAtHome}
 			on:click={() => {
+				if (zoom < 3) zoom = zoom + 0.1;
+			}}
+		>
+			+
+		</button>
+		<button
+			type="button"
+			disabled={isAtHome}
+			on:click={() => {
 				if (zoom > 0.2) zoom = zoom - 0.1;
 			}}
 		>
@@ -168,12 +177,12 @@
 		</button>
 		<button
 			type="button"
-			disabled={isAtHome}
+			disabled={zoom === 1 || isAtHome}
 			on:click={() => {
-				if (zoom < 3) zoom = zoom + 0.1;
+				zoom = 1;
 			}}
 		>
-			+
+			Z
 		</button>
 
 		<select
