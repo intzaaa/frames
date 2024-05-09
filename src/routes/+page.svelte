@@ -6,14 +6,7 @@
 	import { onMount } from 'svelte';
 	import * as _ from 'remeda';
 	import { sha1 } from 'js-sha1';
-	import {
-		DisplayArea,
-		displayAreaSize,
-		Frame,
-		FrameList,
-		s,
-		targetURLEmitter
-	} from './utilities.js';
+	import { Frame, FrameList, s, targetURLEmitter } from './utilities.js';
 
 	let deviceId: string;
 	if (localStorage.getItem('id')) {
@@ -29,19 +22,6 @@
 		console.log([deviceId, currentFrameId, isAtHome]);
 	}
 	let formHeight: number;
-	let window: DisplayArea;
-	$: rotate = 0;
-	$: {
-		if (localStorage.getItem('rotate')) {
-			rotate = parseInt(localStorage.getItem('rotate') || '0') % 360;
-		}
-	}
-	$: topOffset = 0;
-	$: leftOffset = 0;
-	$: rotate, windowSpy();
-	$: {
-		localStorage.setItem('rotate', rotate.toString());
-	}
 	$: load = 0;
 	$: {
 		load = $FrameList.length;
@@ -81,37 +61,7 @@
 		}
 	}
 
-	function windowSpy() {
-		let height = globalThis.document.body.clientHeight;
-		let width = globalThis.document.body.clientWidth;
-		console.log(new DisplayArea(height, width));
-		switch (rotate % 360) {
-			case 0:
-				topOffset = 0;
-				leftOffset = 0;
-				window = new DisplayArea(height - formHeight, width);
-				break;
-			case -180:
-				topOffset = height;
-				leftOffset = width;
-				window = new DisplayArea(height - formHeight, width);
-				break;
-			case -90:
-				topOffset = height;
-				leftOffset = 0;
-				window = new DisplayArea(width - formHeight, height);
-				break;
-			case -270:
-				topOffset = 0;
-				leftOffset = width;
-				window = new DisplayArea(width - formHeight, height);
-				break;
-		}
-		displayAreaSize.set(window);
-	}
-
 	onMount(() => {
-		new ResizeObserver(windowSpy).observe(globalThis.document.body);
 		const url = new URL(globalThis.window.location.href);
 		if (url.searchParams.has('restore')) {
 			localStorage.clear();
@@ -178,13 +128,28 @@
 			currentFrameId = deviceId;
 		}
 	}
+
+	$: zoom = 1;
 </script>
 
-<div
-	id="main"
-	class="main"
-	style={`top: ${topOffset}px; left: ${leftOffset}px; transform: rotate(${rotate}deg); height: ${$displayAreaSize.height + formHeight}px; width: ${$displayAreaSize.width}px`}
->
+<div id="main" class="main">
+	<div class="window">
+		{#each $FrameList as frame (frame.id)}
+			<!-- svelte-ignore a11y-missing-attribute -->
+			<iframe
+				bind:this={frame.element}
+				class:pointer-none={frame.id !== currentFrameId}
+				src={frame.src.href}
+				style={s({
+					transform: `translateY(calc(${($FrameList.findIndex((i) => i.id === currentFrameId) + $FrameList.findIndex((i) => i.id === frame.id)) * 100}%)) scale(${zoom})`,
+					width: `${100 / zoom}%`,
+					height: `${100 / zoom}%`,
+					zIndex: 49
+				})}
+			></iframe>
+		{/each}
+	</div>
+
 	<form
 		id="form"
 		bind:this={form}
@@ -194,13 +159,21 @@
 	>
 		<button
 			type="button"
-			on:click={(event) => {
-				rotate = rotate - 90;
+			on:click={() => {
+				if (zoom > 0.2) zoom = zoom - 0.1;
 			}}
-			><span style="transform: rotate(-45deg); display: inline-block; transform-origin: center"
-				>◯</span
-			></button
 		>
+			-
+		</button>
+		<button
+			type="button"
+			on:click={() => {
+				if (zoom < 3) zoom = zoom + 0.1;
+			}}
+		>
+			+
+		</button>
+
 		<select
 			bind:value={currentFrameId}
 			disabled={$FrameList.length === 0}
@@ -263,17 +236,7 @@
 			style="color: red">X</button
 		>
 	</form>
-	<div class="window">
-		{#each $FrameList as frame (frame.id)}
-			<!-- svelte-ignore a11y-missing-attribute -->
-			<iframe
-				bind:this={frame.element}
-				class:pointer-none={frame.id !== currentFrameId}
-				src={frame.src.href}
-				style={`transform: translateY(calc((${($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}% - ${topOffset}px))); height: ${$displayAreaSize.height}px; z-index: 49`}
-			></iframe>
-		{/each}
-	</div>
+
 	<div
 		class="info"
 		style={s({
@@ -294,10 +257,10 @@
 
 <style lang="postcss">
 	.main {
-		@apply absolute flex h-full w-full flex-col overflow-hidden;
+		@apply flex h-full w-full flex-col overflow-hidden;
 	}
 	.header {
-		@apply left-0 top-0 z-50 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white;
+		@apply left-0 top-0 z-50 flex h-fit w-full max-w-full flex-row bg-black font-mono text-white transition-none;
 	}
 	.header select {
 		box-sizing: content-box;
@@ -315,13 +278,13 @@
 		@apply appearance-none border-solid border-blue-600 pl-2 pr-2;
 	}
 	.window {
-		@apply h-full w-full grow;
+		@apply h-full w-full grow overflow-hidden;
 	}
 	.window iframe {
-		@apply absolute h-full w-full bg-gray-50 duration-700;
+		@apply h-full w-full bg-gray-50 duration-700;
 	}
 	.info {
-		@apply absolute bottom-0 z-0 w-4/5 p-8 font-mono  text-white opacity-75 hover:opacity-100;
+		@apply absolute top-0 z-0 w-4/5 p-8 font-mono  text-white opacity-75 hover:opacity-100;
 	}
 	.info * {
 		@apply text-xs;
