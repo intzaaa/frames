@@ -138,7 +138,7 @@
 			<div
 				class="absolute h-full w-full overflow-hidden"
 				style={s({
-					transform: `translateY(${-($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%) ${zoom === 1 ? '' : `scale(${zoom})`}`,
+					transform: `translateY(${-($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%)`,
 					zIndex: 49
 				})}
 			>
@@ -148,6 +148,7 @@
 					class:pointer-none={frame.id !== currentFrameId}
 					src={frame.src.href}
 					style={s({
+						transform: `${zoom === 1 ? '' : `scale(${zoom})`}`,
 						width: `${100 / zoom}%`,
 						height: `${100 / zoom}%`
 					})}
