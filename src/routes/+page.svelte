@@ -135,18 +135,24 @@
 <div id="main" class="main">
 	<div class="window">
 		{#each $FrameList as frame (frame.id)}
-			<!-- svelte-ignore a11y-missing-attribute -->
-			<iframe
-				bind:this={frame.element}
-				class:pointer-none={frame.id !== currentFrameId}
-				src={frame.src.href}
+			<div
+				class="absolute h-full w-full overflow-hidden"
 				style={s({
-					transform: `translateY(${-(($FrameList.findIndex((i) => i.id === currentFrameId) + $FrameList.findIndex((i) => i.id === frame.id)) * 100) / zoom}%) scale(${zoom})`,
-					width: `${100 / zoom}%`,
-					height: `${100 / zoom}%`,
+					transform: `translateY(${-($FrameList.findIndex((i) => i.id === currentFrameId) - $FrameList.findIndex((i) => i.id === frame.id)) * 100}%) ${zoom === 1 ? '' : `scale(${zoom})`}`,
 					zIndex: 49
 				})}
-			></iframe>
+			>
+				<!-- svelte-ignore a11y-missing-attribute -->
+				<iframe
+					bind:this={frame.element}
+					class:pointer-none={frame.id !== currentFrameId}
+					src={frame.src.href}
+					style={s({
+						width: `${100 / zoom}%`,
+						height: `${100 / zoom}%`
+					})}
+				></iframe>
+			</div>
 		{/each}
 	</div>
 
@@ -164,7 +170,7 @@
 				if (zoom < 3) zoom = zoom + 0.1;
 			}}
 		>
-			+
+			I
 		</button>
 		<button
 			type="button"
@@ -173,7 +179,7 @@
 				if (zoom > 0.2) zoom = zoom - 0.1;
 			}}
 		>
-			-
+			O
 		</button>
 		<button
 			type="button"
@@ -289,10 +295,10 @@
 		@apply appearance-none border-solid border-blue-600 pl-2 pr-2;
 	}
 	.window {
-		@apply h-full w-full grow overflow-hidden;
+		@apply relative h-full w-full grow;
 	}
 	.window iframe {
-		@apply h-full w-full bg-gray-50 duration-700;
+		@apply h-full w-full bg-gray-50 duration-100;
 	}
 	.info {
 		@apply absolute top-0 z-0 w-4/5 p-8 font-mono  text-white opacity-75 hover:opacity-100;
@@ -304,6 +310,6 @@
 		@apply pointer-events-none;
 	}
 	.switch-on {
-		@apply bg-green-500;
+		@apply bg-green-400;
 	}
 </style>
