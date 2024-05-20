@@ -213,7 +213,7 @@
 			name="input"
 			type="text"
 			placeholder={isAtHome
-				? 'You are standing in an open field west of a white house, with a boarded front door...'
+				? 'Have you tried to turn it off and on again?'
 				: currentFrame?.url.pathname}
 		/>
 

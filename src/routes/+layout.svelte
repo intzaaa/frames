@@ -33,7 +33,7 @@
 		height: calc(var(--1dvh, 1vh) * 100); /* This is the "polyfill" */
 		height: 100dvh; /* This is for future browsers that support svh, dvh and lvh viewport units */
 
-		background-image: url('/Iflytek_Suzhou_Branch_and_Institute.jpg');
+		background-image: url('/MORETOWN_FOCUS.webp');
 		background-position: center;
 		background-size: cover;
 
